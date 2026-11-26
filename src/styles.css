@@ -300,7 +300,7 @@ img { display: block; }
 .admin-editor .form-grid { grid-template-columns: 1fr 1fr; }
 .admin-save { border: 0; background: var(--brand); color: var(--brand-foreground); border-radius: 8px; padding: 12px 18px; margin-top: 16px; }
 .admin-product-list { display: grid; gap: 8px; }
-.admin-product-list article { display: grid; grid-template-columns: 1fr 90px 65px 60px 80px; align-items: center; gap: 8px; padding: 12px; }
+.admin-product-list article { display: grid; grid-template-columns: minmax(0,1fr) 90px 65px auto auto auto; align-items: center; gap: 8px; padding: 12px; }
 .admin-product-list article div { display: grid; }
 .admin-product-list small { color: var(--muted); margin-top: 4px; }
 .admin-product-list button { border: 1px solid var(--line); background: var(--surface); color: var(--ink); border-radius: 7px; padding: 7px; }
@@ -660,7 +660,7 @@ img { display: block; }
   .account-profile-card { grid-template-columns: 1fr; padding: 18px; }
   .profile-photo-section { padding-top: 0; }
   .account-profile-form, .account-password-form { gap: 13px; }
-  .admin-product-list article { grid-template-columns: 1fr 70px; }
+  .admin-product-list article { grid-template-columns: minmax(0,1fr) 70px; }
   .admin-users article { grid-template-columns: 1fr 1fr; gap: 8px; }
   .admin-users article .account-actions { grid-column: 1/-1; justify-content: flex-start; }
   .contact-grid { grid-template-columns: 1fr; }

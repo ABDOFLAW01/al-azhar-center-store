@@ -106,6 +106,13 @@ test('admin can disable and permanently delete customer accounts safely', async 
     assert.equal(order.response.status, 201)
     assert.equal(order.data.payment_method, 'COD')
     assert.equal(order.data.payment_status, 'NOT_REQUIRED')
+    const ordersBeforeDelivery = await request('/api/admin/orders', 'GET', undefined, adminCookie)
+    assert.ok(ordersBeforeDelivery.data.some((item: any) => item.id === order.data.id))
+    const deliveredOrder = await request(`/api/admin/orders/${order.data.id}/status`, 'PATCH', { status: 'DELIVERED' }, adminCookie)
+    assert.equal(deliveredOrder.data.status, 'DELIVERED')
+    const ordersAfterDelivery = await request('/api/admin/orders', 'GET', undefined, adminCookie)
+    assert.ok(!ordersAfterDelivery.data.some((item: any) => item.id === order.data.id))
+    assert.equal((database.db.prepare('SELECT status FROM orders WHERE id=?').get(order.data.id) as { status: string }).status, 'DELIVERED')
 
     const paymobEnvironment = [
       'PAYMOB_API_KEY','PAYMOB_INTEGRATION_ID','PAYMOB_IFRAME_ID','PAYMOB_HMAC_SECRET',
@@ -246,6 +253,19 @@ test('admin can disable and permanently delete customer accounts safely', async 
       assert.equal(expiredStatus.data.paymentStatus, 'EXPIRED')
       assert.equal(expiredStatus.data.orderStatus, 'CANCELLED')
       assert.equal((database.db.prepare('SELECT stock FROM products WHERE id=?').get(productId) as { stock: number }).stock, 1)
+
+      const unauthorizedProductDelete = await request(`/api/admin/products/${productId}/permanent`, 'DELETE')
+      assert.equal(unauthorizedProductDelete.response.status, 403)
+      const deletedProduct = await request(`/api/admin/products/${productId}/permanent`, 'DELETE', undefined, adminCookie)
+      assert.equal(deletedProduct.response.status, 200)
+      assert.equal(database.db.prepare('SELECT id FROM products WHERE id=?').get(productId), undefined)
+      const retainedProductOrder = database.db.prepare(`
+        SELECT product_id,product_name,quantity,unit_price FROM order_items WHERE order_id=? AND product_name=?
+      `).get(order.data.id, 'Test item') as { product_id: string | null; product_name: string; quantity: number; unit_price: number }
+      assert.equal(retainedProductOrder.product_id, null)
+      assert.equal(retainedProductOrder.product_name, 'Test item')
+      assert.equal(retainedProductOrder.quantity, 1)
+      assert.equal(retainedProductOrder.unit_price, 100)
     } finally {
       globalThis.fetch = originalFetch
       for (const [key, value] of previousPaymobEnvironment) {

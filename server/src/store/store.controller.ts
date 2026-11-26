@@ -632,7 +632,7 @@ export class StoreController {
   @Get('admin/orders')
   adminOrders(@Req() req: Request) {
     if (this.user(req)?.role !== 'ADMIN') throw new ForbiddenException('صلاحيات الأدمن مطلوبه')
-    return this.database.db.prepare('SELECT * FROM orders ORDER BY created_at DESC').all()
+    return this.database.db.prepare("SELECT * FROM orders WHERE status!='DELIVERED' ORDER BY created_at DESC").all()
   }
 
   @Patch('admin/orders/:id/status')
@@ -674,6 +674,14 @@ export class StoreController {
   deleteProduct(@Req() req: Request, @Param('id') id: string) {
     if (this.user(req)?.role !== 'ADMIN') throw new ForbiddenException('صلاحيات الأدمن مطلوبه')
     this.database.db.prepare('UPDATE products SET is_active=0 WHERE id=?').run(id)
+    return { ok: true }
+  }
+
+  @Delete('admin/products/:id/permanent')
+  permanentlyDeleteProduct(@Req() req: Request, @Param('id') id: string) {
+    if (this.user(req)?.role !== 'ADMIN') throw new ForbiddenException('صلاحيات الأدمن مطلوبه')
+    const result = this.database.db.prepare('DELETE FROM products WHERE id=?').run(id)
+    if (result.changes === 0) throw new NotFoundException('المنتج غير موجود')
     return { ok: true }
   }
 }

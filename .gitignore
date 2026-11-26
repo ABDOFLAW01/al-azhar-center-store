@@ -7,12 +7,10 @@ release/
 .env
 .data/
 public/avatars/
+/public/products/
 /*.png
 src-tauri/target/
 /src-tauri/icons/android/
-/src-tauri/icons/ios/
 android/.gradle/
 android/app/build/
 android/app/src/main/assets/public/
-ios/App/Pods/
-ios/App/App/public/

@@ -1101,6 +1101,23 @@ export default function App() {
     } catch (error) { notify((error as Error).message) }
   }
 
+  async function permanentlyDeleteProduct(id: string) {
+    const confirmation = language === 'ar'
+      ? 'سيُحذف المنتج نهائيًا من المتجر. ستظل تفاصيله محفوظة في الطلبات السابقة. هل تريد المتابعة؟'
+      : 'This permanently deletes the product from the store. Its details will remain in past orders. Continue?'
+    if (!window.confirm(confirmation)) return
+    try {
+      await api(`/api/admin/products/${id}/permanent`, { method: 'DELETE' })
+      setAdminProducts((current) => current.filter((product) => product.id !== id))
+      setProducts((current) => current.filter((product) => product.id !== id))
+      if (selectedProduct?.id === id) setSelectedProduct(null)
+      const form = document.querySelector<HTMLFormElement>('.admin-editor')
+      const editingId = form?.elements.namedItem('id')
+      if (form && editingId instanceof HTMLInputElement && editingId.value === id) form.reset()
+      notify(language === 'ar' ? 'تم حذف المنتج نهائيًا' : 'Product permanently deleted')
+    } catch (error) { notify((error as Error).message) }
+  }
+
   async function createCategory(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault()
     const formElement = event.currentTarget
@@ -1211,7 +1228,9 @@ export default function App() {
   async function updateOrderStatus(id: string, status: string) {
     try {
       const updated = await api(`/api/admin/orders/${id}/status`, { method: 'PATCH', body: JSON.stringify({ status }) })
-      setAdminOrders((current) => current.map((order) => order.id === id ? updated : order))
+      setAdminOrders((current) => status === 'DELIVERED'
+        ? current.filter((order) => order.id !== id)
+        : current.map((order) => order.id === id ? updated : order))
       notify('تم تحديث حالة الطلب')
     } catch (error) { notify((error as Error).message) }
   }
@@ -1767,6 +1786,7 @@ export default function App() {
                       if (active) active.checked = product.is_active === 1
                     }}>{tx("تعديل")}</button>
                     <button className="danger" onClick={() => deleteProduct(product.id)}>{tx("إلغاء العرض")}</button>
+                    <button className="danger" onClick={() => permanentlyDeleteProduct(product.id)}>{tx("حذف")}</button>
                   </article>
                 ))}
               </div>
