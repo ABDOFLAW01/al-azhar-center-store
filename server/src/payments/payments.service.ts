@@ -52,14 +52,11 @@ export class PaymentsService implements OnModuleInit, OnModuleDestroy {
 
   constructor(@Inject(DatabaseService) private readonly database: DatabaseService) {}
 
-  onModuleInit() {
-    this.expirePendingPayments()
+  async onModuleInit() {
+    await this.expirePendingPayments()
     this.expiryTimer = setInterval(() => {
-      try {
-        this.expirePendingPayments()
-      } catch (error) {
-        console.error('[Payments] Could not expire abandoned checkout orders', error)
-      }
+      void this.expirePendingPayments().catch((error) =>
+        console.error('[Payments] Could not expire abandoned checkout orders', error))
     }, 60_000)
     this.expiryTimer.unref()
   }
@@ -178,34 +175,28 @@ export class PaymentsService implements OnModuleInit, OnModuleDestroy {
     }
   }
 
-  expirePendingPayments() {
-    const expired = this.database.db.prepare(`
+  async expirePendingPayments() {
+    const expired = await this.database.db.prepare(`
       SELECT id FROM orders
       WHERE payment_method='PAYMOB' AND payment_status='PENDING'
         AND payment_expires_at<>'' AND payment_expires_at<=?
     `).all(new Date().toISOString()) as Array<{ id: string }>
     for (const { id } of expired) {
-      this.database.db.exec('BEGIN IMMEDIATE')
-      try {
-        const order = this.database.db.prepare(`
-          SELECT id FROM orders WHERE id=? AND payment_method='PAYMOB' AND payment_status='PENDING'
-        `).get(id) as { id: string } | undefined
-        if (order) {
-          const items = this.database.db.prepare('SELECT product_id,quantity FROM order_items WHERE order_id=?').all(id) as Array<{ product_id: string | null; quantity: number }>
-          const restoreStock = this.database.db.prepare('UPDATE products SET stock=stock+? WHERE id=?')
-          for (const item of items) {
-            if (item.product_id) restoreStock.run(item.quantity, item.product_id)
-          }
-          this.database.db.prepare(`
-            UPDATE orders SET payment_status='EXPIRED',status='CANCELLED'
-            WHERE id=? AND payment_status='PENDING'
-          `).run(id)
+      await this.database.db.transaction(async () => {
+        const order = await this.database.db.prepare(`
+          UPDATE orders SET payment_status=payment_status
+          WHERE id=? AND payment_method='PAYMOB' AND payment_status='PENDING'
+        `).run(id)
+        if (order.changes === 0) return
+        const items = await this.database.db.prepare('SELECT product_id,quantity FROM order_items WHERE order_id=?').all(id) as Array<{ product_id: string | null; quantity: number }>
+        for (const item of items) {
+          if (item.product_id) await this.database.db.prepare('UPDATE products SET stock=stock+? WHERE id=?').run(item.quantity, item.product_id)
         }
-        this.database.db.exec('COMMIT')
-      } catch (error) {
-        this.database.db.exec('ROLLBACK')
-        throw error
-      }
+        await this.database.db.prepare(`
+          UPDATE orders SET payment_status='EXPIRED',status='CANCELLED'
+          WHERE id=? AND payment_status='PENDING'
+        `).run(id)
+      })
     }
   }
 

@@ -2,9 +2,8 @@ import 'reflect-metadata'
 import { randomBytes, scryptSync, randomUUID } from 'node:crypto'
 import { stdin, stdout } from 'node:process'
 import { createInterface } from 'node:readline'
-import { DatabaseSync } from 'node:sqlite'
 import { existsSync } from 'node:fs'
-import { resolve } from 'node:path'
+import { DatabaseService } from '../database/database.service'
 
 if (existsSync('.env')) process.loadEnvFile()
 
@@ -20,20 +19,23 @@ async function main() {
   if (!name || !email || !phone || password.length < 10) {
     throw new Error('يرجى إدخال الاسم والبريد والهاتف وكلمة مرور لا تقل عن 10 أحرف')
   }
-  const databasePath = resolve(process.env.AZHAR_STORE_DB ?? '.data/al-azhar-store.sqlite')
-  const db = new DatabaseSync(databasePath)
-  const existing = db.prepare('SELECT id,password_hash FROM users WHERE email=?').get(email) as { id: string; password_hash: string } | undefined
-  if (existing) {
-    db.prepare("UPDATE users SET role='ADMIN',name=?,phone=? WHERE id=?").run(name,phone,existing.id)
-  } else {
-    const salt = randomBytes(16).toString('hex')
-    const digest = scryptSync(password, salt, 64).toString('hex')
-    db.prepare(`
-      INSERT INTO users (id,name,email,phone,password_hash,role,created_at)
-      VALUES (?,?,?,?,?,'ADMIN',?)
-    `).run(randomUUID(), name, email, phone, `${salt}:${digest}`, new Date().toISOString())
+  const database = new DatabaseService()
+  try {
+    await database.onModuleInit()
+    const existing = await database.db.prepare('SELECT id FROM users WHERE email=?').get(email) as { id: string } | undefined
+    if (existing) {
+      await database.db.prepare("UPDATE users SET role='ADMIN',name=?,phone=? WHERE id=?").run(name,phone,existing.id)
+    } else {
+      const salt = randomBytes(16).toString('hex')
+      const digest = scryptSync(password, salt, 64).toString('hex')
+      await database.db.prepare(`
+        INSERT INTO users (id,name,email,phone,password_hash,role,created_at)
+        VALUES (?,?,?,?,?,'ADMIN',?)
+      `).run(randomUUID(), name, email, phone, `${salt}:${digest}`, new Date().toISOString())
+    }
+  } finally {
+    await database.onModuleDestroy()
   }
-  db.close()
   console.log('تم إعداد حساب المدير بنجاح.')
 }
 

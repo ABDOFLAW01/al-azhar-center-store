@@ -53,7 +53,7 @@ export class ChatbotController {
     const apiUrl = process.env.CHATBOT_API_URL
       ?? 'https://generativelanguage.googleapis.com/v1beta/openai/chat/completions'
     const model = process.env.CHATBOT_MODEL ?? 'gemini-3.8-flash'
-    const products = this.database.db.prepare(`
+    const products = await this.database.db.prepare(`
       SELECT p.name,p.description,p.price,p.stock,p.unit,c.name AS category
       FROM products p JOIN categories c ON c.id=p.category_id
       WHERE p.is_active=1

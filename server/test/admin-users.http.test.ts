@@ -248,7 +248,7 @@ test('admin can disable and permanently delete customer accounts safely', async 
       assert.equal(expiredOrder.response.status, 201)
       database.db.prepare('UPDATE orders SET payment_expires_at=? WHERE id=?')
         .run(new Date(Date.now() - 1000).toISOString(), expiredOrder.data.id)
-      app.get(PaymentsService).expirePendingPayments()
+      await app.get(PaymentsService).expirePendingPayments()
       const expiredStatus = await request(`/api/payments/status/${expiredOrder.data.id}`)
       assert.equal(expiredStatus.data.paymentStatus, 'EXPIRED')
       assert.equal(expiredStatus.data.orderStatus, 'CANCELLED')

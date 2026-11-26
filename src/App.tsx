@@ -1248,7 +1248,7 @@ export default function App() {
     <div className="app">
       <header className="topbar">
         <button className="brand" onClick={() => navigate('/','home')} aria-label={language === 'ar' ? 'العودة للرئيسية' : 'Go to home'}>
-          <img className="brand-logo" src={storeSettings.logo_url || '/logo.png'} alt={tx('شعار سنتــــر الأزهر')} />
+          <img className="brand-logo" src={assetUrl(storeSettings.logo_url || '/logo.png')} alt={tx('شعار سنتــــر الأزهر')} />
           <span><strong>{tx(storeSettings.store_name || 'سنتــــر الأزهر')}</strong><small>{tx(storeSettings.store_location || 'شبين القناطر')}</small></span>
         </button>
         <label className="search">
@@ -2106,7 +2106,7 @@ export default function App() {
         <div className="footer-main">
           <div className="footer-brand-block">
             <button className="footer-brand" onClick={() => navigate('/','home')}>
-              <img src={storeSettings.logo_url || '/logo.png'} alt="" />
+              <img src={assetUrl(storeSettings.logo_url || '/logo.png')} alt="" />
               <span><strong>{tx(storeSettings.store_name || 'سنتــــر الأزهر')}</strong><small>{tx(storeSettings.store_location || 'شبين القناطر')}</small></span>
             </button>
             <p>{contentText(language, storeSettings, 'footer_description', 'سنتر متعدد الأقسام مختص بكل ما يخص الأزهر.')}</p>

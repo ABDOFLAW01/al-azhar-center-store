@@ -1,8 +1,8 @@
 import 'reflect-metadata'
 import assert from 'node:assert/strict'
-import { mkdtempSync, readFileSync, rmSync } from 'node:fs'
+import { mkdtempSync, rmSync } from 'node:fs'
 import { tmpdir } from 'node:os'
-import { basename, join } from 'node:path'
+import { join } from 'node:path'
 import type { AddressInfo } from 'node:net'
 import { NestFactory } from '@nestjs/core'
 import { AppModule } from '../src/app.module'
@@ -76,8 +76,11 @@ test('customers can update their profile, avatar, and password securely', async 
     const pngData = 'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMCAO+/l2sAAAAASUVORK5CYII='
     const avatar = await request('/api/auth/avatar', 'POST', { dataUrl: `data:image/png;base64,${pngData}` }, sessionCookie)
     assert.equal(avatar.response.status, 201)
-    assert.match(avatar.data.user.avatar_url, /^\/avatars\/[0-9a-f-]+\.png$/)
-    const savedImage = readFileSync(join(directory, 'public', 'avatars', basename(avatar.data.user.avatar_url)))
+    assert.match(avatar.data.user.avatar_url, /^\/api\/media\/[0-9a-f-]{36}$/)
+    const savedImageResponse = await fetch(`${baseUrl}${avatar.data.user.avatar_url}`)
+    assert.equal(savedImageResponse.status, 200)
+    assert.match(savedImageResponse.headers.get('content-type') || '', /image\/png/)
+    const savedImage = Buffer.from(await savedImageResponse.arrayBuffer())
     assert.deepEqual(savedImage.subarray(0, 8), Buffer.from([137,80,78,71,13,10,26,10]))
 
     const secondLogin = await request('/api/auth/login', 'POST', { email: 'profile@example.test', password: 'TestPass1234' })

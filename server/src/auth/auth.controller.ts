@@ -1,8 +1,7 @@
 import { BadRequestException, Body, Controller, Get, Inject, Patch, Post, Req, Res, UnauthorizedException } from '@nestjs/common'
 import type { Request, Response } from 'express'
-import { randomUUID } from 'node:crypto'
-import { mkdirSync, writeFileSync } from 'node:fs'
-import { resolve } from 'node:path'
+import { saveMedia } from '../database/media'
+import { DatabaseService } from '../database/database.service'
 import { AuthService } from './auth.service'
 
 function tokenFromRequest(request: Request) {
@@ -22,67 +21,70 @@ function sessionCookieOptions(includeMaxAge = true) {
 
 @Controller('api/auth')
 export class AuthController {
-  constructor(@Inject(AuthService) private readonly auth: AuthService) {}
+  constructor(
+    @Inject(AuthService) private readonly auth: AuthService,
+    @Inject(DatabaseService) private readonly database: DatabaseService,
+  ) {}
 
-  private requireUser(request: Request) {
-    const user = this.auth.getUser(tokenFromRequest(request))
+  private async requireUser(request: Request) {
+    const user = await this.auth.getUser(tokenFromRequest(request))
     if (!user) throw new UnauthorizedException('سجل الدخول أولاً')
     return user
   }
 
   @Post('register')
-  register(@Body() body: { name: string; email: string; phone: string; password: string }, @Res({ passthrough: true }) res: Response) {
-    const result = this.auth.register(body.name, body.email, body.phone, body.password)
+  async register(@Body() body: { name: string; email: string; phone: string; password: string }, @Res({ passthrough: true }) res: Response) {
+    const result = await this.auth.register(body.name, body.email, body.phone, body.password)
     res.cookie('azhar_session', result.token, sessionCookieOptions())
     return { user: result.user }
   }
 
   @Post('login')
-  login(@Body() body: { email: string; password: string }, @Res({ passthrough: true }) res: Response) {
-    const result = this.auth.login(body.email, body.password)
+  async login(@Body() body: { email: string; password: string }, @Res({ passthrough: true }) res: Response) {
+    const result = await this.auth.login(body.email, body.password)
     res.cookie('azhar_session', result.token, sessionCookieOptions())
     return { user: result.user }
   }
 
   @Get('me')
-  me(@Req() req: Request) {
-    return { user: this.auth.getUser(tokenFromRequest(req)) }
+  async me(@Req() req: Request) {
+    return { user: await this.auth.getUser(tokenFromRequest(req)) }
   }
 
   @Post('presence')
-  presence(@Req() req: Request) {
-    const user = this.requireUser(req)
+  async presence(@Req() req: Request) {
+    const user = await this.requireUser(req)
     const token = tokenFromRequest(req)
     if (!token) throw new UnauthorizedException('سجل الدخول أولاً')
-    this.auth.touchPresence(user.id, token)
+    await this.auth.touchPresence(user.id, token)
     return { ok: true }
   }
 
   @Patch('profile')
-  updateProfile(@Req() req: Request, @Body() body: { name?: unknown; accentColor?: unknown; fontScale?: unknown }) {
-    const user = this.requireUser(req)
+  async updateProfile(@Req() req: Request, @Body() body: { name?: unknown; accentColor?: unknown; fontScale?: unknown }) {
+    const user = await this.requireUser(req)
     if (typeof body.name !== 'string' || typeof body.accentColor !== 'string') {
       throw new BadRequestException('الاسم واللون مطلوبان')
     }
     const fontScale = body.fontScale === undefined ? user.font_scale : body.fontScale
     if (typeof fontScale !== 'string') throw new BadRequestException('حجم الخط غير صالح')
-    return { user: this.auth.updateProfile(user.id, body.name, body.accentColor, fontScale) }
+    return { user: await this.auth.updateProfile(user.id, body.name, body.accentColor, fontScale) }
   }
 
   @Patch('password')
-  changePassword(@Req() req: Request, @Body() body: { currentPassword?: unknown; newPassword?: unknown }) {
-    const user = this.requireUser(req)
+  async changePassword(@Req() req: Request, @Body() body: { currentPassword?: unknown; newPassword?: unknown }) {
+    const user = await this.requireUser(req)
     const token = tokenFromRequest(req)
     if (typeof body.currentPassword !== 'string' || typeof body.newPassword !== 'string' || !token) {
       throw new BadRequestException('أدخل كلمة المرور الحالية والجديدة')
     }
-    this.auth.changePassword(user.id, body.currentPassword, body.newPassword, token)
+    await this.auth.changePassword(user.id, body.currentPassword, body.newPassword, token)
     return { ok: true }
   }
 
   @Post('avatar')
-  uploadAvatar(@Req() req: Request, @Body() body: { dataUrl?: unknown }) {
-    const user = this.requireUser(req)
+  async uploadAvatar(@Req() req: Request, @Body() body: { dataUrl?: unknown }) {
+    const user = await this.requireUser(req)
     if (typeof body.dataUrl !== 'string') throw new BadRequestException('اختر صورة صالحة')
     const match = /^data:image\/(png|jpeg|webp);base64,([A-Za-z0-9+/]+={0,2})$/.exec(body.dataUrl)
     if (!match) throw new BadRequestException('صيغة الصورة يجب أن تكون PNG أو JPG أو WebP')
@@ -97,18 +99,13 @@ export class AuthController {
     const isWebp = mime === 'image/webp' && imageBytes.toString('ascii', 0, 4) === 'RIFF' && imageBytes.toString('ascii', 8, 12) === 'WEBP'
     if (!isPng && !isJpeg && !isWebp) throw new BadRequestException('محتوى الصورة غير صالح')
 
-    const extension = match[1] === 'jpeg' ? '.jpg' : `.${match[1]}`
-    const avatarDirectory = resolve(process.cwd(), 'public', 'avatars')
-    mkdirSync(avatarDirectory, { recursive: true })
-    const fileName = `${randomUUID()}${extension}`
-    writeFileSync(resolve(avatarDirectory, fileName), imageBytes)
-    const updatedUser = this.auth.updateAvatar(user.id, `/avatars/${fileName}`)
+    const updatedUser = await this.auth.updateAvatar(user.id, await saveMedia(this.database.db, mime, imageBytes))
     return { user: updatedUser }
   }
 
   @Post('logout')
-  logout(@Req() req: Request, @Res({ passthrough: true }) res: Response) {
-    this.auth.logout(tokenFromRequest(req))
+  async logout(@Req() req: Request, @Res({ passthrough: true }) res: Response) {
+    await this.auth.logout(tokenFromRequest(req))
     res.clearCookie('azhar_session', sessionCookieOptions(false))
     return { ok: true }
   }
