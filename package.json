@@ -1,0 +1,50 @@
+{
+  "name": "al-azhar-center-store",
+  "private": true,
+  "version": "1.0.0",
+  "type": "module",
+  "scripts": {
+    "dev": "concurrently -k -n WEB,API -c cyan,magenta \"vite\" \"tsx watch --tsconfig tsconfig.server.json server/src/main.ts\"",
+    "dev:web": "vite",
+    "dev:api": "tsx watch --tsconfig tsconfig.server.json server/src/main.ts",
+    "build": "tsc -b && tsc --noEmit --project tsconfig.server.json && vite build",
+    "build:desktop": "tauri build",
+    "mobile:sync": "npm run build && cap sync",
+    "mobile:assets": "capacitor-assets generate --assetPath public --iconBackgroundColor \"#1f5d3a\" --splashBackgroundColor \"#ffffff\"",
+    "admin:setup": "tsx --tsconfig tsconfig.server.json server/src/scripts/create-admin.ts",
+    "test:api": "tsx --tsconfig tsconfig.server.json --test server/test/*.test.ts"
+  },
+  "dependencies": {
+    "@capacitor/android": "^8.6.3",
+    "@capacitor/core": "^8.6.3",
+    "@capacitor/ios": "^8.6.3",
+    "@nestjs/common": "^12.5.1",
+    "@nestjs/core": "^12.5.1",
+    "@nestjs/platform-express": "^12.5.1",
+    "class-transformer": "^0.5.1",
+    "class-validator": "^0.15.1",
+    "cookie": "^1.1.1",
+    "react": "^19.3.1",
+    "react-dom": "^19.3.1",
+    "reflect-metadata": "^0.2.2",
+    "rxjs": "^7.8.2"
+  },
+  "devDependencies": {
+    "@capacitor/cli": "^8.0.0",
+    "@capacitor/assets": "^4.0.0",
+    "@tauri-apps/cli": "^2.12.6",
+    "@types/cookie": "^1.0.0",
+    "@types/express": "^5.0.6",
+    "@types/node": "^24.19.2",
+    "@types/react": "^19.3.0",
+    "@types/react-dom": "^19.3.0",
+    "@vitejs/plugin-react": "^6.1.2",
+    "concurrently": "^10.0.7",
+    "tsx": "^4.21.0",
+    "typescript": "~7.0.2",
+    "vite": "^8.3.4"
+  },
+  "allowScripts": {
+    "esbuild@0.28.2": true
+  }
+}

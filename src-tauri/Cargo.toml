@@ -1,0 +1,16 @@
+[package]
+name = "al-azhar-center"
+version = "1.0.0"
+description = "Al Azhar Center store"
+authors = ["Al Azhar Center"]
+edition = "2021"
+
+[lib]
+name = "al_azhar_center_lib"
+crate-type = ["staticlib", "cdylib", "rlib"]
+
+[build-dependencies]
+tauri-build = { version = "2", features = [] }
+
+[dependencies]
+tauri = { version = "2", features = [] }

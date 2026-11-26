@@ -1,0 +1,163 @@
+name: Package Al Azhar Center apps
+
+on:
+  workflow_dispatch:
+  push:
+    tags:
+      - "v*"
+
+permissions:
+  contents: read
+
+jobs:
+  desktop:
+    name: ${{ matrix.name }}
+    runs-on: ${{ matrix.runner }}
+    env:
+      VITE_API_BASE_URL: ${{ vars.VITE_API_BASE_URL }}
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - name: Windows x64
+            runner: windows-latest
+            target: x86_64-pc-windows-msvc
+            bundles: nsis
+          - name: Windows 32-bit
+            runner: windows-latest
+            target: i686-pc-windows-msvc
+            bundles: nsis
+          - name: Windows ARM64
+            runner: windows-latest
+            target: aarch64-pc-windows-msvc
+            bundles: nsis
+          - name: macOS Intel
+            runner: macos-latest
+            target: x86_64-apple-darwin
+            bundles: dmg
+          - name: macOS Apple Silicon
+            runner: macos-latest
+            target: aarch64-apple-darwin
+            bundles: dmg
+          - name: Linux DEB and RPM
+            runner: ubuntu-24.04
+            target: x86_64-unknown-linux-gnu
+            bundles: deb,rpm
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: ${{ matrix.target }}
+      - name: Install Linux build dependencies
+        if: runner.os == 'Linux'
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y build-essential curl file libayatana-appindicator3-dev librsvg2-dev patchelf libssl-dev libwebkit2gtk-4.1-dev
+      - name: Require a public API endpoint
+        shell: bash
+        run: |
+          if [ -z "$VITE_API_BASE_URL" ]; then
+            echo "::error::Set the VITE_API_BASE_URL repository variable to the public HTTPS API origin."
+            exit 1
+          fi
+      - run: npm ci
+      - name: Build desktop installer
+        run: npm run build:desktop -- --target ${{ matrix.target }} --bundles ${{ matrix.bundles }}
+      - uses: actions/upload-artifact@v4
+        with:
+          name: app-${{ matrix.name }}
+          path: src-tauri/target/${{ matrix.target }}/release/bundle/**/*
+          if-no-files-found: error
+          retention-days: 14
+
+  android:
+    name: Android APK
+    runs-on: ubuntu-24.04
+    env:
+      VITE_API_BASE_URL: ${{ vars.VITE_API_BASE_URL }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "21"
+      - uses: android-actions/setup-android@v3
+      - name: Require a public API endpoint
+        run: |
+          if [ -z "$VITE_API_BASE_URL" ]; then
+            echo "::error::Set the VITE_API_BASE_URL repository variable to the public HTTPS API origin."
+            exit 1
+          fi
+      - run: npm ci
+      - run: npm run build
+      - run: npx capacitor-assets generate --android --assetPath public --iconBackgroundColor "#1f5d3a" --splashBackgroundColor "#ffffff"
+      - run: npx cap sync android
+      - name: Build Android APK
+        working-directory: android
+        run: ./gradlew assembleRelease
+      - uses: actions/upload-artifact@v4
+        with:
+          name: app-Android
+          path: android/app/build/outputs/apk/release/*.apk
+          if-no-files-found: error
+          retention-days: 14
+
+  ios:
+    name: iOS app (unsigned)
+    runs-on: macos-latest
+    env:
+      VITE_API_BASE_URL: ${{ vars.VITE_API_BASE_URL }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - name: Require a public API endpoint
+        run: |
+          if [ -z "$VITE_API_BASE_URL" ]; then
+            echo "::error::Set the VITE_API_BASE_URL repository variable to the public HTTPS API origin."
+            exit 1
+          fi
+      - run: npm ci
+      - run: npm run build
+      - run: npx capacitor-assets generate --ios --assetPath public --iconBackgroundColor "#1f5d3a" --splashBackgroundColor "#ffffff"
+      - run: npx cap sync ios
+      - name: Build unsigned iOS app
+        run: |
+          xcodebuild -project ios/App/App.xcodeproj -scheme App -configuration Release -sdk iphoneos -derivedDataPath "$RUNNER_TEMP/ios-build" CODE_SIGNING_ALLOWED=NO build
+          mkdir -p "$RUNNER_TEMP/ios-ipa/Payload"
+          ditto "$RUNNER_TEMP/ios-build/Build/Products/Release-iphoneos/App.app" "$RUNNER_TEMP/ios-ipa/Payload/App.app"
+          ditto -c -k --sequesterRsrc "$RUNNER_TEMP/ios-ipa/Payload" "$RUNNER_TEMP/AlAzharCenter-iOS-unsigned.ipa"
+      - uses: actions/upload-artifact@v4
+        with:
+          name: app-iOS-unsigned
+          path: ${{ runner.temp }}/AlAzharCenter-iOS-unsigned.ipa
+          if-no-files-found: error
+          retention-days: 14
+
+  publish:
+    name: Publish GitHub release
+    if: startsWith(github.ref, 'refs/tags/v')
+    needs: [desktop, android, ios]
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          pattern: app-*
+          path: release-assets
+          merge-multiple: true
+      - uses: softprops/action-gh-release@v2
+        with:
+          files: release-assets/**/*
+          generate_release_notes: true
