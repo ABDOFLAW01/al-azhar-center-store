@@ -232,6 +232,23 @@ export class PostgresAdapter implements DatabaseAdapter {
 
   async initialize() {
     await this.pool.query(postgresSchema)
+    await this.pool.query(`
+      ALTER TABLE users ADD COLUMN IF NOT EXISTS account_status TEXT NOT NULL DEFAULT 'ACTIVE';
+      ALTER TABLE users ADD COLUMN IF NOT EXISTS last_seen_at TEXT NOT NULL DEFAULT '';
+      ALTER TABLE users ADD COLUMN IF NOT EXISTS avatar_url TEXT NOT NULL DEFAULT '';
+      ALTER TABLE users ADD COLUMN IF NOT EXISTS accent_color TEXT NOT NULL DEFAULT '#1f5d3a';
+      ALTER TABLE users ADD COLUMN IF NOT EXISTS font_scale TEXT NOT NULL DEFAULT 'normal';
+      ALTER TABLE sessions ADD COLUMN IF NOT EXISTS last_seen_at TEXT NOT NULL DEFAULT '';
+      ALTER TABLE products ADD COLUMN IF NOT EXISTS sku TEXT NOT NULL DEFAULT '';
+      ALTER TABLE products ADD COLUMN IF NOT EXISTS barcode TEXT NOT NULL DEFAULT '';
+      ALTER TABLE products ADD COLUMN IF NOT EXISTS brand TEXT NOT NULL DEFAULT '';
+      ALTER TABLE products ADD COLUMN IF NOT EXISTS unit TEXT NOT NOT NULL DEFAULT 'قطعة';
+      ALTER TABLE orders ADD COLUMN IF NOT EXISTS customer_email TEXT NOT NULL DEFAULT '';
+      ALTER TABLE orders ADD COLUMN IF NOT EXISTS payment_status TEXT NOT NULL DEFAULT 'NOT_REQUIRED';
+      ALTER TABLE orders ADD COLUMN IF NOT EXISTS payment_reference TEXT NOT NULL DEFAULT '';
+      ALTER TABLE orders ADD COLUMN IF NOT EXISTS payment_transaction_id TEXT NOT NULL DEFAULT '';
+      ALTER TABLE orders ADD COLUMN IF NOT EXISTS payment_expires_at TEXT NOT NULL DEFAULT '';
+    `)
     await this.pool.query("INSERT INTO store_settings (key,value) VALUES ('site_accent_color','#1f5d3a') ON CONFLICT (key) DO NOTHING")
   }
 
