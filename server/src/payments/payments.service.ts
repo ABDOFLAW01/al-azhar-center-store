@@ -1,6 +1,6 @@
 import { BadGatewayException, Inject, Injectable, OnModuleDestroy, OnModuleInit, ServiceUnavailableException } from '@nestjs/common'
 import { createHmac, timingSafeEqual } from 'node:crypto'
-import { DatabaseService } from '../database/database.service'
+import { DatabaseService } from '../database/database.service.js'
 
 type PaymobConfig = {
   apiKey: string

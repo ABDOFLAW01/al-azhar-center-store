@@ -2,8 +2,8 @@ import { Injectable, OnModuleDestroy, OnModuleInit } from '@nestjs/common'
 import { mkdirSync } from 'node:fs'
 import { dirname, resolve } from 'node:path'
 import { DatabaseSync } from 'node:sqlite'
-import { PostgresAdapter, SQLiteAdapter, type DatabaseAdapter } from './database-adapter'
-import { defaultStoreSettings } from './store-defaults'
+import { PostgresAdapter, SQLiteAdapter, type DatabaseAdapter } from './database-adapter.js'
+import { defaultStoreSettings } from './store-defaults.js'
 
 @Injectable()
 export class DatabaseService implements OnModuleInit, OnModuleDestroy {

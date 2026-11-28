@@ -1,5 +1,5 @@
 import { BadGatewayException, BadRequestException, Body, Controller, Inject, Post, ServiceUnavailableException } from '@nestjs/common'
-import { DatabaseService } from './database/database.service'
+import { DatabaseService } from './database/database.service.js'
 
 type ChatCompletionResponse = {
   choices?: Array<{ message?: { content?: string } }>

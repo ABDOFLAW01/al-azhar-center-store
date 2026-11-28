@@ -1,6 +1,6 @@
 import { BadRequestException } from '@nestjs/common'
 import { randomUUID } from 'node:crypto'
-import type { DatabaseAdapter } from './database-adapter'
+import type { DatabaseAdapter } from './database-adapter.js'
 
 export async function saveMedia(database: DatabaseAdapter, contentType: string, data: Uint8Array) {
   if (data.byteLength > 3 * 1024 * 1024) {

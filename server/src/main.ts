@@ -1,6 +1,6 @@
 import 'reflect-metadata'
 import { existsSync } from 'node:fs'
-import { createApplication } from './create-application'
+import { createApplication } from './create-application.js'
 
 async function bootstrap() {
   if (existsSync('.env')) process.loadEnvFile()

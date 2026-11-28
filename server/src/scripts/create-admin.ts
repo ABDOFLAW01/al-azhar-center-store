@@ -3,7 +3,7 @@ import { randomBytes, scryptSync, randomUUID } from 'node:crypto'
 import { stdin, stdout } from 'node:process'
 import { createInterface } from 'node:readline'
 import { existsSync } from 'node:fs'
-import { DatabaseService } from '../database/database.service'
+import { DatabaseService } from '../database/database.service.js'
 
 if (existsSync('.env')) process.loadEnvFile()
 

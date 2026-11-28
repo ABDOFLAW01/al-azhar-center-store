@@ -1,6 +1,6 @@
 import { BadRequestException, Inject, Injectable, UnauthorizedException } from '@nestjs/common'
 import { randomBytes, randomUUID, scryptSync, timingSafeEqual, createHash } from 'node:crypto'
-import { DatabaseService } from '../database/database.service'
+import { DatabaseService } from '../database/database.service.js'
 
 @Injectable()
 export class AuthService {

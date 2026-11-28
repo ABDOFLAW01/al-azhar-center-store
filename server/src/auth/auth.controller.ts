@@ -1,8 +1,8 @@
 import { BadRequestException, Body, Controller, Get, Inject, Patch, Post, Req, Res, UnauthorizedException } from '@nestjs/common'
 import type { Request, Response } from 'express'
-import { saveMedia } from '../database/media'
-import { DatabaseService } from '../database/database.service'
-import { AuthService } from './auth.service'
+import { saveMedia } from '../database/media.js'
+import { DatabaseService } from '../database/database.service.js'
+import { AuthService } from './auth.service.js'
 
 function tokenFromRequest(request: Request) {
   const cookie = request.headers.cookie ?? ''

@@ -3,9 +3,9 @@ import type { Request } from 'express'
 import { randomUUID, createHash } from 'node:crypto'
 import { readdirSync, existsSync, readFileSync } from 'node:fs'
 import { resolve, extname } from 'node:path'
-import { DatabaseService } from '../database/database.service'
-import { saveMedia } from '../database/media'
-import { PaymentsService, type PaymobTransaction } from '../payments/payments.service'
+import { DatabaseService } from '../database/database.service.js'
+import { saveMedia } from '../database/media.js'
+import { PaymentsService, type PaymobTransaction } from '../payments/payments.service.js'
 
 const editableSettings = new Set([
   'store_name','store_location','store_whatsapp','store_email','store_facebook','store_instagram','store_youtube','store_map_url','store_address','site_accent_color',
