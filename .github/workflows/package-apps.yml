@@ -124,7 +124,6 @@ jobs:
         with:
           pattern: app-*
           path: release-assets
-          merge-multiple: true
       - name: Create release and upload assets
         uses: actions/github-script@v8
         with:
@@ -150,9 +149,13 @@ jobs:
                 prerelease: false,
               })).data;
             }
-            for (const name of fs.readdirSync('release-assets')) {
-              const file = path.join('release-assets', name);
-              if (!fs.statSync(file).isFile()) continue;
+            const files = (directory) => fs.readdirSync(directory, { withFileTypes: true })
+              .flatMap((entry) => {
+                const file = path.join(directory, entry.name);
+                return entry.isDirectory() ? files(file) : [file];
+              });
+            for (const file of files('release-assets')) {
+              const name = path.relative('release-assets', file).split(path.sep).join('-');
               await github.rest.repos.uploadReleaseAsset({
                 ...context.repo,
                 release_id: release.id,
