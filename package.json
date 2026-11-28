@@ -7,7 +7,7 @@
     "dev": "concurrently -k -n WEB,API -c cyan,magenta \"vite\" \"tsx watch --tsconfig tsconfig.server.json server/src/main.ts\"",
     "dev:web": "vite",
     "dev:api": "tsx watch --tsconfig tsconfig.server.json server/src/main.ts",
-    "build": "tsc -b && tsc --noEmit --project tsconfig.server.json && vite build",
+    "build": "tsc -b && tsc --noEmit --project tsconfig.server.json && tsc --project tsconfig.server.json --outDir server/dist --rootDir . --noEmit false && vite build",
     "build:desktop": "tauri build",
     "mobile:sync": "npm run build && cap sync android",
     "mobile:assets": "capacitor-assets generate --assetPath public --iconBackgroundColor \"#1f5d3a\" --splashBackgroundColor \"#ffffff\"",

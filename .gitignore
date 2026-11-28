@@ -1,5 +1,6 @@
 node_modules/
 dist/
+server/dist/
 release/
 *.tsbuildinfo
 /vite.config.js

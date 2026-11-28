@@ -1,7 +1,7 @@
 import 'reflect-metadata'
 import type { IncomingMessage, ServerResponse } from 'node:http'
 import type { NestExpressApplication } from '@nestjs/platform-express'
-import { createApplication } from '../server/src/create-application.js'
+import { createApplication } from '../server/dist/server/src/create-application.js'
 
 let application: Promise<NestExpressApplication> | undefined
 
