@@ -385,35 +385,19 @@ git push origin v1.0.1
 
 ## النشر والاستضافة
 
-### الخادم
+### نشر الواجهة وAPI على Vercel
 
-انشر Node.js API على استضافة تدعم Node.js حديثًا، واربط PostgreSQL دائمة (مثل Neon) بتعيين `DATABASE_URL`. يمكن استخدام SQLite محليًا دون هذا المتغير. مثال إعداد بيئة:
+يُشغّل المشروع API كـVercel Function واحدة في `api/[...path].ts`، وتستقبل مسارات `/api/*` بجانب الواجهة في النطاق نفسه. Vercel يشغّل SQLite على مساحة مؤقتة؛ لذلك يجب استخدام PostgreSQL خارجية دائمة مثل Neon.
 
-```dotenv
-NODE_ENV=production
-HOST=0.0.0.0
-PORT=3001
-AZHAR_STORE_UPLOAD_DIR=/var/lib/al-azhar-center/site-content
-CORS_ORIGINS=https://store.example.com
-```
+1. في Neon انسخ **pooled connection string** لقاعدة البيانات.
+2. في Vercel افتح **Project → Settings → Environment Variables**، وأضف `DATABASE_URL` إلى Production وPreview باستخدام رابط Neon. لا تستخدم متغيرًا يبدأ بـ`VITE_` لهذا السر.
+3. أعد نشر مشروع Vercel. تحقق من `https://al-azhar-center-store.vercel.app/api/health`؛ المتوقع `{"ok":true,"database":"connected"}`.
+4. إعداد المشروع: Root Directory `./`، Framework Preset **Vite**، Install Command `npm ci`، Build Command `npm run build`، Output Directory `dist`.
+5. لا تحتاج الواجهة على Vercel إلى `VITE_API_BASE_URL` لأن `/api/*` على النطاق نفسه. تطبيقات Windows وLinux وAndroid تستخدم نطاق Vercel كعنوان API افتراضي. غيّر Repository Variable الاختياري `VITE_API_BASE_URL` في GitHub Actions فقط إذا تغيّر النطاق؛ لا حاجة إلى وضعه كـSecret.
 
-تُنشأ جداول PostgreSQL وإعدادات الموقع عند بدء API. `npm run admin:setup` يستخدم قاعدة البيانات نفسها لإعداد المدير. شغّل API خلف Reverse Proxy/TLS واضبط النطاق العام لـPaymob إذا فُعّل الدفع. تُحفظ صور الحسابات والشعار وصور المنتجات ومحتوى الموقع المرفوعة في جدول `media` بقاعدة البيانات؛ أما الصور الثابتة في `public/catalog/` فتأتي مع التطبيق.
+تُنشأ جداول PostgreSQL وإعدادات الموقع عند بدء أول Function. `npm run admin:setup` يستخدم قاعدة البيانات نفسها لإعداد المدير؛ شغّله محليًا مع `DATABASE_URL` مضبوطًا إلى قاعدة Neon. الصور المرفوعة تُخزن في جدول `media`. حد Vercel لطلب HTTP يفرض ألا يتجاوز حجم الصورة المرفوعة 3 ميجابايت. إعدادات `CHATBOT_API_KEY` وPaymob تُضاف إلى إعدادات بيئة Vercel على الخادم فقط عند تفعيلها.
 
-يوجد Blueprint جاهز لخدمة API على Render في `render.yaml`. من Render اختر **New → Blueprint**, اربط هذا المستودع والفرع `main`، ثم أدخل `DATABASE_URL` من Neon، وأدخل أصل موقع Vercel في `CORS_ORIGINS` (مثل `https://اسم-المشروع.vercel.app`). بعد إنشاء الخدمة، انسخ نطاقها `https://...onrender.com`؛ نقطة الصحة `/api/health` يجب أن ترجع `{"ok":true,"database":"connected"}`. خطة Render Free قد توقف الخادم عند عدم الاستخدام؛ قاعدة Neon تظل منفصلة ودائمة.
-
-### الواجهة
-
-ابنِ الواجهة بعنوان API الإنتاجي:
-
-```powershell
-$env:VITE_API_BASE_URL = "https://api.example.com"
-npm ci
-npm run build
-```
-
-انشر محتوى `dist/` على استضافة Static عبر HTTPS. عيّن `CORS_ORIGINS` في API إلى أصل الموقع الفعلي. تطبيقات Capacitor وTauri تستخدم عنوان `VITE_API_BASE_URL` نفسه الذي أُدخل وقت البناء.
-
-لنشر الواجهة على Vercel، استورد المستودع من دون تغيير Root Directory (`./`)، واترك Framework Preset على **Vite**، واجعل Install Command `npm ci` وBuild Command `npm run build` وOutput Directory `dist`. أضف متغير بيئة باسم `VITE_API_BASE_URL` وقيمته نطاق Render الكامل فقط، مثل `https://al-azhar-center-api.onrender.com`، من دون `/api`، ثم انشر الواجهة. إذا غيّرت نطاق Vercel، حدّث `CORS_ORIGINS` في Render وأعد النشر.
+تطبيقات Windows وLinux وAndroid تستخدم نطاق Vercel كعنوان API افتراضي. يمكن تغيير ذلك عبر Repository Variable اختياري باسم `VITE_API_BASE_URL` في GitHub Actions، من دون `/api` في النهاية؛ لا حاجة لإضافته كـSecret أيضًا.
 
 > يجب أن يكون موقع الواجهة وAPI على HTTPS في الإنتاج لأن Cookies الجلسات الآمنة والدفع الإلكتروني يتطلبان اتصالًا مشفرًا. اختبر تسجيل الدخول وإنشاء طلب وعودة Paymob بعد ربط النطاق.
 

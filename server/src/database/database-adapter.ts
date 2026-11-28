@@ -223,7 +223,11 @@ export class PostgresAdapter implements DatabaseAdapter {
   private readonly activeTransaction = new AsyncLocalStorage<PoolClient>()
 
   constructor(connectionString: string) {
-    this.pool = new Pool({ connectionString, max: 5, idleTimeoutMillis: 30_000 })
+    this.pool = new Pool({
+      connectionString,
+      max: process.env.VERCEL ? 1 : 5,
+      idleTimeoutMillis: process.env.VERCEL ? 5_000 : 30_000,
+    })
   }
 
   async initialize() {

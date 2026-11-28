@@ -507,7 +507,7 @@ export class StoreController {
     const match = /^data:(image\/(?:png|jpeg|webp));base64,([A-Za-z0-9+/]+=*)$/.exec(body.dataUrl ?? '')
     if (!match) throw new BadRequestException('ارفع صورة PNG أو JPG أو WebP')
     const image = Buffer.from(match[2], 'base64')
-    if (image.length > 5 * 1024 * 1024) throw new BadRequestException('حجم الصورة يجب ألا يتجاوز 5 ميجابايت')
+    if (image.length > 3 * 1024 * 1024) throw new BadRequestException('حجم الصورة يجب ألا يتجاوز 3 ميجابايت')
     return { imageUrl: await saveMedia(this.database.db, match[1], image) }
   }
 

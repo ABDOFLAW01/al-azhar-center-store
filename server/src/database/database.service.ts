@@ -17,6 +17,9 @@ export class DatabaseService implements OnModuleInit, OnModuleDestroy {
       this.db = this.postgres
       return
     }
+    if (process.env.VERCEL) {
+      throw new Error('DATABASE_URL must be configured for the Vercel deployment')
+    }
     this.postgres = null
     const databasePath = resolve(process.env.AZHAR_STORE_DB ?? '.data/al-azhar-store.sqlite')
     mkdirSync(dirname(databasePath), { recursive: true })
