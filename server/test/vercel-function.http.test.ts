@@ -4,10 +4,10 @@ import { createServer } from 'node:http'
 import { mkdtempSync, rmSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
-import handler, { closeApplication } from '../../api/[...path]'
+import handler, { closeApplication } from '../../api/index'
 import { test } from 'node:test'
 
-test('Vercel catch-all function serves the Nest API routes', async () => {
+test('Vercel API function serves top-level and nested Nest routes', async () => {
   const directory = mkdtempSync(join(tmpdir(), 'azhar-vercel-function-'))
   const previousDatabase = process.env.AZHAR_STORE_DB
   const previousDatabaseUrl = process.env.DATABASE_URL
@@ -27,9 +27,17 @@ test('Vercel catch-all function serves the Nest API routes', async () => {
     await new Promise<void>((resolve) => server.listen(0, '127.0.0.1', resolve))
     const address = server.address()
     assert.ok(address && typeof address !== 'string')
-    const response = await fetch(`http://127.0.0.1:${address.port}/api/health`)
-    assert.equal(response.status, 200)
-    assert.deepEqual(await response.json(), { ok: true, database: 'connected' })
+    const health = await fetch(`http://127.0.0.1:${address.port}/api?__api_path=health`)
+    assert.equal(health.status, 200)
+    assert.deepEqual(await health.json(), { ok: true, database: 'connected' })
+
+    const currentUser = await fetch(`http://127.0.0.1:${address.port}/api?__api_path=auth/me`)
+    assert.equal(currentUser.status, 200)
+    assert.deepEqual(await currentUser.json(), { user: null })
+
+    const paymentOptions = await fetch(`http://127.0.0.1:${address.port}/api?__api_path=payments/options`)
+    assert.equal(paymentOptions.status, 200)
+    assert.deepEqual(await paymentOptions.json(), { methods: ['COD'] })
   } finally {
     await closeApplication()
     await new Promise<void>((resolve, reject) => server.close((error) => error ? reject(error) : resolve()))
