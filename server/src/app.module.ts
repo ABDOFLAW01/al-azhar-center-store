@@ -1,10 +1,10 @@
 import { Module } from '@nestjs/common'
-import { AuthController } from './auth/auth.controller'
-import { AuthService } from './auth/auth.service'
-import { DatabaseService } from './database/database.service'
-import { StoreController } from './store/store.controller'
-import { ChatbotController } from './chatbot.controller'
-import { PaymentsService } from './payments/payments.service'
+import { AuthController } from './auth/auth.controller.js'
+import { AuthService } from './auth/auth.service.js'
+import { DatabaseService } from './database/database.service.js'
+import { StoreController } from './store/store.controller.js'
+import { ChatbotController } from './chatbot.controller.js'
+import { PaymentsService } from './payments/payments.service.js'
 
 @Module({
   controllers: [AuthController, StoreController, ChatbotController],
