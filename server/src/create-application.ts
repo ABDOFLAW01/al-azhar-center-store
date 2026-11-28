@@ -2,7 +2,7 @@ import { ValidationPipe } from '@nestjs/common'
 import { NestFactory } from '@nestjs/core'
 import type { NestExpressApplication } from '@nestjs/platform-express'
 import { resolve } from 'node:path'
-import { AppModule } from './app.module'
+import { AppModule } from './app.module.js'
 
 export async function createApplication() {
   const app = await NestFactory.create<NestExpressApplication>(AppModule, { bodyParser: false })
