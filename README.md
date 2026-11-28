@@ -399,6 +399,8 @@ CORS_ORIGINS=https://store.example.com
 
 تُنشأ جداول PostgreSQL وإعدادات الموقع عند بدء API. `npm run admin:setup` يستخدم قاعدة البيانات نفسها لإعداد المدير. شغّل API خلف Reverse Proxy/TLS واضبط النطاق العام لـPaymob إذا فُعّل الدفع. تُحفظ صور الحسابات والشعار وصور المنتجات ومحتوى الموقع المرفوعة في جدول `media` بقاعدة البيانات؛ أما الصور الثابتة في `public/catalog/` فتأتي مع التطبيق.
 
+يوجد Blueprint جاهز لخدمة API على Render في `render.yaml`. من Render اختر **New → Blueprint**, اربط هذا المستودع والفرع `main`، ثم أدخل `DATABASE_URL` من Neon، وأدخل أصل موقع Vercel في `CORS_ORIGINS` (مثل `https://اسم-المشروع.vercel.app`). بعد إنشاء الخدمة، انسخ نطاقها `https://...onrender.com`؛ نقطة الصحة `/api/health` يجب أن ترجع `{"ok":true,"database":"connected"}`. خطة Render Free قد توقف الخادم عند عدم الاستخدام؛ قاعدة Neon تظل منفصلة ودائمة.
+
 ### الواجهة
 
 ابنِ الواجهة بعنوان API الإنتاجي:
@@ -410,6 +412,8 @@ npm run build
 ```
 
 انشر محتوى `dist/` على استضافة Static عبر HTTPS. عيّن `CORS_ORIGINS` في API إلى أصل الموقع الفعلي. تطبيقات Capacitor وTauri تستخدم عنوان `VITE_API_BASE_URL` نفسه الذي أُدخل وقت البناء.
+
+لنشر الواجهة على Vercel، استورد المستودع من دون تغيير Root Directory (`./`)، واترك Framework Preset على **Vite**، واجعل Install Command `npm ci` وBuild Command `npm run build` وOutput Directory `dist`. أضف متغير بيئة باسم `VITE_API_BASE_URL` وقيمته نطاق Render الكامل فقط، مثل `https://al-azhar-center-api.onrender.com`، من دون `/api`، ثم انشر الواجهة. إذا غيّرت نطاق Vercel، حدّث `CORS_ORIGINS` في Render وأعد النشر.
 
 > يجب أن يكون موقع الواجهة وAPI على HTTPS في الإنتاج لأن Cookies الجلسات الآمنة والدفع الإلكتروني يتطلبان اتصالًا مشفرًا. اختبر تسجيل الدخول وإنشاء طلب وعودة Paymob بعد ربط النطاق.
 
